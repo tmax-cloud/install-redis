@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: redis
+  name: redis-sentinel-service
+  labels:
+    app: redis-sentinel
+spec:
+  selector:
+    app: redis-sentinel
+  ports:
+  - name: redis-sentinel
+    protocol: TCP
+    port: 6379
+    targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: redis
+  name: redis-sentinel
+  labels:
+    app: redis-sentinel
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-sentinel
+  template:
+    metadata:
+      labels:
+          app: redis-sentinel
+    spec:
+      containers:
+      - name: redis-sentinel
+        image: bitnami/redis-sentinel:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+        env:
+        - name: REDIS_MASTER_HOST
+          value: "redis-master.redis.svc.cluster.local"
+        - name: REDIS_MASTER_PORT_NUMBER
+          value: "6379"
+        - name: REDIS_MASTER_SET
+          value: "mymaster"
+        - name: SENTINEL
+          value: "true"
+        - name: REDIS_SENTINEL_QUORUM
+          value: "2"
+       #- name: REDIS_MASTER_PASSWORD
+       #  value: mypassword
