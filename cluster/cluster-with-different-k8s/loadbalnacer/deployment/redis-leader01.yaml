@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-leader01
+  namespace: redis
+  labels:
+    app: redis-cluster
+    leader: "01"
+data:
+  redis.conf: |+
+    bind 0.0.0.0
+    cluster-enabled yes
+    cluster-require-full-coverage no
+    cluster-node-timeout 15000
+    cluster-config-file /data/nodes.conf
+    cluster-migration-barrier 1
+    appendonly no
+    save ""
+    protected-mode no
+    requirepass "mypassword"
+    masterauth "mypassword"
+    cluster-announce-ip {leader01_IP}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-leader01
+  namespace: redis
+  labels:
+    app: redis
+    role: leader
+    tier: backend
+    leader: "01"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      leader: "01"
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: leader
+        tier: backend
+        leader: "01"
+    spec:
+      containers:
+      - name: leader
+        image: docker.io/redis:6.0.5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+          readOnly: false
+        args: ["--requirepass", "mypassword"]
+        command: ["redis-server", "/conf/redis.conf"]
+      volumes:
+      - name: conf
+        configMap:
+          name: redis-cluster-leader01
+          defaultMode: 0755

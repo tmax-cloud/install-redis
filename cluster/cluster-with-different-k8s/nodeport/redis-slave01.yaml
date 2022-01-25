@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-slave01
+  namespace: redis
+  labels:
+    app: redis-cluster
+    slave: "01"
+data:
+  fix-ip.sh: |
+    #!/bin/sh
+    CLUSTER_CONFIG="/data/nodes.conf"
+    if [ -f ${CLUSTER_CONFIG} ]; then
+      if [ -z "${HOST_IP}" ]; then
+        echo "Unable to determine Pod IP address!"
+        exit 1
+      fi
+      echo "Updating my IP to ${HOST_IP} in ${CLUSTER_CONFIG}"
+      sed -i.bak -e "/myself/ s/[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/${HOST_IP}/" ${CLUSTER_CONFIG}
+    fi
+    exec "$@"
+  redis.conf: |+
+    bind 0.0.0.0
+    cluster-enabled yes
+    cluster-require-full-coverage no
+    cluster-node-timeout 15000
+    cluster-config-file /data/nodes.conf
+    cluster-migration-barrier 1
+    appendonly no
+    save ""
+    protected-mode no
+    requirepass "mypassword"
+    masterauth "mypassword"
+    cluster-announce-ip 192.168.9.194
+    cluster-announce-port 30031
+    cluster-announce-bus-port 31031
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-slave01
+  namespace: redis
+  labels:
+    app: redis
+    role: slave
+    tier: backend
+    slave: "01"
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+    nodePort: 30031
+    name: client
+  - port: 16379
+    targetPort: 16379
+    nodePort: 31031
+    name: gossip
+  selector:
+    app: redis
+    role: slave
+    tier: backend
+    slave: "01"
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-slave01
+  namespace: redis
+  labels:
+    app: redis
+    role: slave
+    tier: backend
+    slave: "01"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      slave: "01"
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: slave
+        tier: backend
+        slave: "01"
+    spec:
+      containers:
+      - name: slave
+        image: docker.io/redis:6.0.5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+          readOnly: false
+        args: ["--requirepass", "mypassword"]
+        command: ["/conf/fix-ip.sh", "redis-server", "/conf/redis.conf"]
+        env:
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+      volumes:
+      - name: conf
+        configMap:
+          name: redis-cluster-slave01
+          defaultMode: 0755
