@@ -14,7 +14,7 @@ apply(){
         fi
     done
 
-        for((i=0; i<4; i++))
+    for((i=0; i<4; i++))
     do
         external_ip=`kubectl get service -n redis -l slave=0$i | grep slave0$1 | awk '{print $4}'`
         if [ $external_ip ]
@@ -29,6 +29,18 @@ delete(){
     set -x
     kubectl delete -f ./deployment
     kubectl delete -f ./service
+
+
+    for((i=0; i<4; i++))
+    do
+	    sed '/cluster-announce-ip/ c\    cluster-announce-ip {leader0'$i'_IP}' redis-leader0$i.yaml
+    done
+
+    for((i=0; i<4; i++))
+    do
+	    sed '/cluster-announce-ip/ c\    cluster-announce-ip {slave0'$i'_IP}' redis-slave0$i.yaml
+    done
+
 }
 
 if [ -z $1 ]
