@@ -8,7 +8,7 @@ apply(){
         external_ip=`kubectl get service -n redis -l leader=0$i | grep leader0$1 | awk '{print $4}'`
         if [ $external_ip ]
         then
-            while [ $external_ip =~ "pending" ]
+            while [[ "$external_ip" =~ "pending" ]]
             do
                 sleep 3s
                 external_ip=`kubectl get service -n redis -l leader=0$i | grep leader0$1 | awk '{print $4}'`
@@ -23,7 +23,7 @@ apply(){
         external_ip=`kubectl get service -n redis -l slave=0$i | grep slave0$1 | awk '{print $4}'`
         if [ $external_ip ]
         then
-            while [ $external_ip =~ "pending" ]
+            while [[ "$external_ip" =~ "pending" ]]
             do
                 sleep 3s
                 external_ip=`kubectl get service -n redis -l slave=0$i | grep slave0$1 | awk '{print $4}'`
