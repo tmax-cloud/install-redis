@@ -9,6 +9,10 @@ apply(){
         external_ip=`kubectl get service -n redis -l leader=0$i | grep leader0$1 | awk '{print $4}'`
         if [ $external_ip ]
         then
+            while [ $external_ip =~ "pending" ]
+            do
+                external_ip=`kubectl get service -n redis -l leader=0$i | grep leader0$1 | awk '{print $4}'`
+            done
             sed -i 's#{leader0'$i'_IP}#'$external_ip'#g' ./deployment/redis-leader0$i.yaml
             kubectl apply -f ./deployment/redis-leader0$i.yaml
         fi
@@ -19,6 +23,10 @@ apply(){
         external_ip=`kubectl get service -n redis -l slave=0$i | grep slave0$1 | awk '{print $4}'`
         if [ $external_ip ]
         then
+            while [ $external_ip =~ "pending" ]
+            do
+                external_ip=`kubectl get service -n redis -l slave=0$i | grep slave0$1 | awk '{print $4}'`
+            done
             sed -i 's#{slave0'$i'_IP}#'$external_ip'#g' ./deployment/redis-slave0$i.yaml
             kubectl apply -f ./deployment/redis-slave0$i.yaml
         fi
