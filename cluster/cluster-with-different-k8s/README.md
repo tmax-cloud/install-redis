@@ -1,11 +1,19 @@
 # Redis Cluster
 
 ### NodePort
-* 진행중
+* redis 버그로 지원되지 않음
+* 해당 이슈 [참고](https://github.com/redis/redis/issues/6432)
 
 ### LoadBalancer
+* 사전 작업
+    * k8s 클러스터에 master 2 + slave 2 분배 (해당 노드에서 사용하지 않는 yaml은 삭제할 것)
+    * 예시
+        * 1번 노드 : leader00, leader02, slave01, slave03
+        * 2번 노드 : slave00, slave02, leader01, leader03
 * 설치
+    * 각 k8s 노드에서 아래 명령어 실행
 ```bash
+sudo chmod +x install.sh
 ./install.sh install
 ```
 * 삭제
