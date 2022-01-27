@@ -42,12 +42,12 @@ delete(){
 
     for((i=0; i<4; i++))
     do
-	    sed '/cluster-announce-ip/ c\    cluster-announce-ip {leader0'$i'_IP}' ./deployment/redis-leader0$i.yaml
+	    sed -i '/cluster-announce-ip/ c\    cluster-announce-ip {leader0'$i'_IP}' ./deployment/redis-leader0$i.yaml
     done
 
     for((i=0; i<4; i++))
     do
-	    sed '/cluster-announce-ip/ c\    cluster-announce-ip {slave0'$i'_IP}' ./deployment/redis-slave0$i.yaml
+	    sed -i '/cluster-announce-ip/ c\    cluster-announce-ip {slave0'$i'_IP}' ./deployment/redis-slave0$i.yaml
     done
 
 }
